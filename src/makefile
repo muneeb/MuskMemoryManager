@@ -2,6 +2,14 @@ CXX=g++
 
 CXXFLAGS=-I $(IDIR) -std=c++11 -O2 -g
 
+OS := $(shell uname)
+
+ifeq ($(OS),Darwin)
+	CXXLIBFLAGS=-dynamiclib -flat_namespace
+else
+	CXXLIBFLAGS=-fPIC -shared
+endif
+
 ODIR=../obj
 LDIR=../lib
 TDIR=../test
@@ -24,7 +32,7 @@ $(ODIR)/%.o: $(SDIR)/%.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 MuskMemoryManager: $(OBJ)
-	$(CXX) $(CXXFLAGS) -dynamiclib -flat_namespace -o $(LIB) $(OBJ)
+	$(CXX) $(CXXFLAGS) $(CXXLIBFLAGS) -o $(LIB) $(OBJ)
 
 test: $(TEXE)
 

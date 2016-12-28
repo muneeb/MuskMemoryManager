@@ -60,11 +60,11 @@ class MuskMemoryManager: private BaseMemoryManager{
     
     MuskMemoryManager();
     
+    void* askOSMemAllocate(const size_t);
+    
     public:
     
     static MuskMemoryManager& getInstance();
-    
-    void* askOSMemAllocate(const size_t);
     
     void* mm_allocate(const size_t);
     
