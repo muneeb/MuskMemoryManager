@@ -157,6 +157,7 @@ void MuskMemoryManager::mm_free(const void* ptrToFree){
         if(memChunkFreed->mc_next)
         	memChunkFreed->mc_next->mc_prev = memChunkFreed;
         
+        /* check and update (if needed) the tail of the memory chunk list on merging free blocks */
         if(memChunkFreed->mc_next == mm_tailMemChunk)
         	mm_tailMemChunk = memChunkFreed;
         
@@ -173,6 +174,7 @@ void MuskMemoryManager::mm_free(const void* ptrToFree){
         if(memChunkFreed->mc_next)
         	memChunkFreed->mc_next->mc_prev = memChunkFreed->mc_prev;
         
+        /* check and update (if needed) the tail of the memory chunk list on merging free blocks */
         if(memChunkFreed == mm_tailMemChunk)
         	mm_tailMemChunk = memChunkFreed->mc_prev;
     }
