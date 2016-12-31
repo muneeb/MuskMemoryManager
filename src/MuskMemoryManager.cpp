@@ -30,6 +30,7 @@ MuskMemoryManager::MuskMemoryManager(){
     mm_freePoolSize = MEGA - sizeof(MemoryChunk);
     
     memoryPoolsList.push_back((void*) mm_headMemChunk);
+    freeMemChunk_size_ptr_m.insert(pair<size_t,MemoryChunk*>(mm_headMemChunk->mc_chunkSize,mm_headMemChunk));
     
 }
 
@@ -47,6 +48,8 @@ void* MuskMemoryManager::askOSMemAllocate(const size_t alloc_size=MEGA){
 
 void* MuskMemoryManager::mm_allocate(const size_t alloc_size){
     
+    /* return the MemoryChunk whose size is closest to (and not less than) alloc_size */
+    auto it = freeMemChunk_size_ptr_m.lower_bound(alloc_size);
     MemoryChunk* searchMemChunk = mm_headMemChunk;
     
     while (searchMemChunk){
