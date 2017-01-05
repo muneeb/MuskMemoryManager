@@ -20,9 +20,16 @@
 #include <stdlib.h>
 #include <list>
 #include <iostream>
+#include <map>
+
+#include "BaseMemoryManager.hpp"
+
 using namespace std;
 
 typedef unsigned char BYTE;
+
+/***************************** VIEW: MemoryChunk and BaseMemoryManager structure *********************************
+ ***************************** DONOT UNCOMMENT -- THIS IS INCLUDED IN THE .hpp FILE ******************************
 
 class MemoryChunk{
     
@@ -51,12 +58,23 @@ class BaseMemoryManager
     size_t mm_freePoolSize;
 
 };
+ 
+**************************** DONOT UNCOMMENT -- THIS IS INCLUDED IN THE .hpp FILE *******************************/
 
 class MuskMemoryManager: private BaseMemoryManager{
     
     private:
     
+    /* This structure is maintained to keep track of all memory pools allocated -- used at the end of application to destroy all allocated pools */
     list<void*> memoryPoolsList;
+    
+    /* The following two structures will be used to speed-up allocate and free operations */
+    
+    /* freeMemChunk_size_ptr_m is a map structure used to maintain the free memory heap. Used to make allocation fast */
+    map<size_t,MemoryChunk*> freeMemChunk_size_ptr_m;
+    
+    /* inUseMemChunk_size_ptr_m is used to maintain track of all used memory chunks. Used to make deallocation (free) fast */
+    map<MemoryChunk*,MemoryChunk*> inUseMemChunk_size_ptr_m;
     
     MuskMemoryManager();
     
