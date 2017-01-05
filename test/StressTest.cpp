@@ -16,7 +16,7 @@ int main(){
     MuskMemoryManager& mm = MuskMemoryManager::getInstance();
     void* ptr1 = NULL;
     
-    for (unsigned long i = 0; i < 100000; ++i) {
+    for (unsigned long i = 0; i < 20000; ++i) {
         ptr1 = (int*) mm.mm_allocate(sizeof(int));
     }
     
@@ -26,7 +26,7 @@ int main(){
     
     start = std::clock();
     
-    for (unsigned long i = 0; i < 100000; ++i) {
+    for (unsigned long i = 0; i < 20000; ++i) {
         ptr1 = (int*) malloc(sizeof(int));
     }
     
