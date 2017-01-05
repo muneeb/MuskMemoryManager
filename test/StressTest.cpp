@@ -4,6 +4,9 @@
 
 using namespace std;
 
+/***************************** WARNING ********************************/
+/* The default make command may not work with this -- remove all optimization flags */
+
 int main(){
     
     std::clock_t start, stop;
@@ -13,7 +16,7 @@ int main(){
     MuskMemoryManager& mm = MuskMemoryManager::getInstance();
     void* ptr1 = NULL;
     
-    for (int i = 0; i < 10000; ++i) {
+    for (unsigned long i = 0; i < 100000; ++i) {
         ptr1 = (int*) mm.mm_allocate(sizeof(int));
     }
     
@@ -23,7 +26,7 @@ int main(){
     
     start = std::clock();
     
-    for (int i = 0; i < 10000; ++i) {
+    for (unsigned long i = 0; i < 100000; ++i) {
         ptr1 = (int*) malloc(sizeof(int));
     }
     
