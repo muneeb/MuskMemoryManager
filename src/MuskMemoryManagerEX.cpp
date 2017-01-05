@@ -49,14 +49,15 @@ void* MuskMemoryManager::askOSMemAllocate(const size_t alloc_size=MEGA){
 void* MuskMemoryManager::mm_allocate(const size_t alloc_size){
     
     /* return the MemoryChunk whose size is closest to (and not less than) alloc_size */
-    auto it = freeMemChunk_size_ptr_m.lower_bound(alloc_size);
-    MemoryChunk* searchMemChunk = mm_headMemChunk;
+    auto it_ptrToAllocMemChunk = freeMemChunk_size_ptr_m.lower_bound(alloc_size);
     
-    while (searchMemChunk){
-        if(searchMemChunk->mc_free && searchMemChunk->mc_chunkSize >= alloc_size )
-        	break;
-        searchMemChunk = searchMemChunk->mc_next;
-    }
+    MemoryChunk* searchMemChunk = NULL;
+    if(it_ptrToAllocMemChunk != freeMemChunk_size_ptr_m.end())
+		searchMemChunk = (MemoryChunk*) it_ptrToAllocMemChunk->second;
+    
+    /* remove from the free list */
+    if (searchMemChunk)
+        freeMemChunk_size_ptr_m.erase(it_ptrToAllocMemChunk);
     
     /* if we have reached the end of current pool without */
     /* we need a new buffer allocation from the OS */
@@ -97,13 +98,12 @@ void* MuskMemoryManager::mm_allocate(const size_t alloc_size){
         newMemoryChunk->mc_prev = mm_tailMemChunk;
         mm_tailMemChunk = newMemoryChunk;
         
-        searchMemChunk = newMemoryChunk;
+        searchMemChunk = mm_tailMemChunk;
         
     }
     _LIBCPP_ASSERT(searchMemChunk != NULL , "searchMemChunk should have been made available by now");
     /* Now we should have a memory chunk to accommodate the user request */
     /* if the requested memory space wasn't available with the Memory Manager a new one (large enough to accomodate user data) has been requested from OS and added */
-    
     
     /* create a new free memory chunk if there is space left after the memory space allocated to user */
     /* if this is not the case a few bytes towards the end of the new buffer could be wasted by user -- but there is no solution to that so we keep it as it is */
@@ -121,12 +121,18 @@ void* MuskMemoryManager::mm_allocate(const size_t alloc_size){
         if(searchMemChunk == mm_tailMemChunk)
         	mm_tailMemChunk = newMemoryChunk;
         
+        /* insert free memory chunk only when there is opportunity to do so*/
+        freeMemChunk_size_ptr_m.insert(pair<size_t,MemoryChunk*>(newMemoryChunk->mc_chunkSize, newMemoryChunk));
+        
     }
     
     searchMemChunk->mc_free = false;
     
     mm_userDataSize += alloc_size;
     mm_freePoolSize = mm_freePoolSize - alloc_size - sizeof(MemoryChunk);
+    
+    /* insert the allocated memory chunk as in use in the inUseMemChunk_size_ptr_m */
+    inUseMemChunk_size_ptr_m.insert(pair<MemoryChunk*,MemoryChunk*>(searchMemChunk, searchMemChunk));
     
     /* return address after skipping the header */
     return (void*) ((BYTE*) searchMemChunk + sizeof(MemoryChunk));
@@ -137,14 +143,12 @@ void MuskMemoryManager::mm_free(const void* ptrToFree){
     /* on allocation users are given a pointer pointing to the address right after the header we need to move back by as many bytes to get to the header start */
     MemoryChunk* ptrMemoryChunk = (MemoryChunk*) ((BYTE*) ptrToFree - sizeof(MemoryChunk));
     
-    MemoryChunk* memChunkFreed = mm_headMemChunk;
+    auto it_ptrToFree = inUseMemChunk_size_ptr_m.find(ptrMemoryChunk);
+    MemoryChunk* memChunkFreed = NULL;
+    if (it_ptrToFree != inUseMemChunk_size_ptr_m.end())
+    	memChunkFreed = (MemoryChunk*) it_ptrToFree->first;
     
-    while (memChunkFreed){
-        if( memChunkFreed == ptrMemoryChunk )
-        	break;
-        memChunkFreed = memChunkFreed->mc_next;
-    }
-    _LIBCPP_ASSERT(memChunkFreed != NULL , "Invalid pointer --  no memory was allocated at this address");
+    _LIBCPP_ASSERT(memChunkFreed != NULL, "Invalid pointer --  no memory was allocated at this address");
     
     memChunkFreed->mc_free = true;
     
@@ -152,6 +156,13 @@ void MuskMemoryManager::mm_free(const void* ptrToFree){
     
     /* if next chunk is free and contiguous in memory then merge it with this one */
     if (memChunkFreed->mc_next && memChunkFreed->mc_next->mc_free && ( (MemoryChunk*) ((BYTE*) memChunkFreed + sizeof(MemoryChunk) + memChunkFreed->mc_chunkSize) == memChunkFreed->mc_next) ) {
+        
+        auto rm_pair = freeMemChunk_size_ptr_m.equal_range(memChunkFreed->mc_next->mc_chunkSize);
+        for (auto it=rm_pair.first; it!=rm_pair.second; ++it)
+            if ((MemoryChunk*) it->second == (MemoryChunk*) memChunkFreed->mc_next){
+        		freeMemChunk_size_ptr_m.erase(it);
+                break;
+            }
         
         /* merge the space of next "free" chunk and also reclaim the header space for that chunk */
         memChunkFreed->mc_chunkSize += memChunkFreed->mc_next->mc_chunkSize + sizeof(MemoryChunk);
@@ -168,7 +179,14 @@ void MuskMemoryManager::mm_free(const void* ptrToFree){
     }
     
     /* if prev chunk is free and contiguous in memory then merge it with this one */
-    if (memChunkFreed->mc_prev && memChunkFreed->mc_prev->mc_free && ( (MemoryChunk*) ((BYTE*) memChunkFreed->mc_prev + sizeof(MemoryChunk) +memChunkFreed->mc_prev->mc_chunkSize) == memChunkFreed)) {
+    if (memChunkFreed->mc_prev && memChunkFreed->mc_prev->mc_free && ( (MemoryChunk*) ((BYTE*) memChunkFreed->mc_prev + sizeof(MemoryChunk) + memChunkFreed->mc_prev->mc_chunkSize) == memChunkFreed)) {
+        
+        auto rm_pair = freeMemChunk_size_ptr_m.equal_range(memChunkFreed->mc_prev->mc_chunkSize);
+        for (auto it=rm_pair.first; it!=rm_pair.second; ++it)
+            if ((MemoryChunk*) it->second == (MemoryChunk*) memChunkFreed->mc_prev){
+                freeMemChunk_size_ptr_m.erase(it);
+                break;
+            }
         
         /* merge the space of "freed" chunk with previous and also reclaim the header space for the freed chunk */
         memChunkFreed->mc_prev->mc_chunkSize += memChunkFreed->mc_chunkSize + sizeof(MemoryChunk);
@@ -181,8 +199,14 @@ void MuskMemoryManager::mm_free(const void* ptrToFree){
         /* check and update (if needed) the tail of the memory chunk list on merging free blocks */
         if(memChunkFreed == mm_tailMemChunk)
         	mm_tailMemChunk = memChunkFreed->mc_prev;
+        
+        memChunkFreed = memChunkFreed->mc_prev;
     }
     
+    freeMemChunk_size_ptr_m.insert(pair<size_t,MemoryChunk*>(memChunkFreed->mc_chunkSize,memChunkFreed));
+    
+    /* remove the iterator from inUseMemChunk_size_ptr_m map in the end since the iterator is lost */
+    inUseMemChunk_size_ptr_m.erase(it_ptrToFree);
 }
 
 void MuskMemoryManager::displayInfo(){
@@ -200,6 +224,7 @@ void MuskMemoryManager::displayInfo(){
         cout << "MemChunk->mc_next " << searchMemChunk->mc_next << endl << endl;
         searchMemChunk = searchMemChunk->mc_next;
     }
+    
 }
 
 /* clean-up code for the Memory Manager goes in the destructor */

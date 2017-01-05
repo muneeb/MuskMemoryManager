@@ -22,27 +22,37 @@ DEPS=$(patsubst %,$(IDIR)/%,$(_DEPS))
 _OBJ=MuskMemoryManager.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
-TEST_SOURCES=$(TDIR)/BasicMMOps.cpp
+MM_SOURCES=$(wildcard $(SDIR)/*.cpp)
+MM_LIBS=$(patsubst $(SDIR)/%.cpp,$(LDIR)/lib%.so,$(MM_SOURCES))
+
+TEST_SOURCES=$(wildcard $(TDIR)/*.cpp)
 TEXE = $(patsubst %.cpp,%,$(TEST_SOURCES))
 
 _LIB=libMuskMemoryManager.so
 LIB = $(patsubst %,$(LDIR)/%,$(_LIB))
 
+all: $(MM_LIBS) test
+
+$(LDIR)/lib%.so: $(ODIR)/%.o
+	$(CXX) $(CXXFLAGS) $(CXXLIBFLAGS) -o $@ $<
+
 $(ODIR)/%.o: $(SDIR)/%.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-MuskMemoryManager: $(OBJ)
-	$(CXX) $(CXXFLAGS) $(CXXLIBFLAGS) -o $(LIB) $(OBJ)
-
 test: $(TEXE)
 
-$(TEXE): $(TEST_SOURCES)
+$(TDIR)/%: $(TDIR)/%.cpp
 	$(CXX) $(CXXFLAGS) -L $(LDIR) $< -o $@ -lMuskMemoryManager
+	$(CXX) $(CXXFLAGS) -L $(LDIR) $< -o $@EX -lMuskMemoryManagerEX
 
 .PHONY: clean
 
+veryclean:
+	rm -r $(ODIR)/*.o $(LDIR)/*
+	rm $(TEXE)
+
 clean:
-	rm $(ODIR)/*.o $(LDIR)/*
+	rm -r $(ODIR)/*.o $(LDIR)/*
 
 testclean:
 	rm $(TEXE)
