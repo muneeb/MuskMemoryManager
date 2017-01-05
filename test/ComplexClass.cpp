@@ -47,8 +47,22 @@ class Complex{
     static void* operator new (size_t size){
         assert(size == sizeof(Complex));
         
-        return (void*) mm->mm_allocate(sizeof(Complex));
+        return (void*) mm->mm_allocate(size);
         
+    }
+    
+    static void operator delete (void* ptr) noexcept {
+        mm->mm_free(ptr);
+    }
+    
+    static void* operator new[](size_t size){
+        
+        return (void*) mm->mm_allocate(size);
+        
+    }
+    
+    static void operator delete[](void* ptr, size_t size) noexcept {
+        mm->mm_free(ptr);
     }
     
     void printVector(){
@@ -83,7 +97,13 @@ int main(){
     c_ptr2->printVector();
     
     mm->mm_free(c_ptr1);
-    mm->mm_free(c_ptr2);
+    delete c_ptr2;
+    
+    Complex* c_ptrArr = new Complex[10];
+    
+    mm->displayInfo();
+    
+    delete[] c_ptrArr;
     
     return 0;
     
