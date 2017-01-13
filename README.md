@@ -11,11 +11,11 @@ A) If the Memory Manager can has enough free space to allocate in the existing M
 
 ![memory_alloca](https://cloud.githubusercontent.com/assets/213910/21926534/7095732e-d982-11e6-8a5a-666b78d74546.png)
 
-B) If the Memory Manager does not have enough free space in the existing Memory pools a new Memory pool is requested from OS by the Memory Manager and the user request is completed
+B) If the Memory Manager does not have enough free space in the existing Memory pools, a new Memory pool is requested from OS by the Memory Manager and the user request is completed
 
 ![memory_allocb](https://cloud.githubusercontent.com/assets/213910/21926628/e5c921fe-d982-11e6-846d-a7fb71f100da.png)
 
-Memory Space Free -- applications using the Memory Manager requests a memory space using mm_free. If there are adjacen free Memory Chunks they are merged as follows
+Memory Space Free -- applications using the Memory Manager free a memory space in use with the mm_free function. If there are adjacent free Memory Chunks, they are merged as follows
 
 ![memory_free](https://cloud.githubusercontent.com/assets/213910/21926732/54a58bf8-d983-11e6-85d7-a1c0c838bfaa.png)
 
