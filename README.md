@@ -15,7 +15,7 @@ B) If the Memory Manager does not have enough free space in the existing Memory 
 
 ![memory_allocb](https://cloud.githubusercontent.com/assets/213910/21926628/e5c921fe-d982-11e6-846d-a7fb71f100da.png)
 
-Memory Space Free -- applications using the Memory Manager free a memory space in use with the mm_free function. If there are adjacent free Memory Chunks, they are merged as follows
+Memory Space Free -- applications using the Memory Manager free a memory space in use by calling the mm_free function. If there are adjacent free Memory Chunks, they are merged as follows
 
 ![memory_free](https://cloud.githubusercontent.com/assets/213910/21926732/54a58bf8-d983-11e6-85d7-a1c0c838bfaa.png)
 
